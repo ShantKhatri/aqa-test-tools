@@ -36,7 +36,7 @@ jobs:
       - name: Run CommitHunterCLI
         id: run_commit_hunter
         run: |
-          java -jar target/commit-hunter-1.0-SNAPSHOT-jar-with-dependencies.jar "$GOOD_BUILD" "$BAD_BUILD" > output.txt
+          java -jar CommitHunter/target/commit-hunter-1.0-SNAPSHOT-jar-with-dependencies.jar "$GOOD_BUILD" "$BAD_BUILD" > output.txt
           cat output.txt
 
       - name: Parse URLs from output
