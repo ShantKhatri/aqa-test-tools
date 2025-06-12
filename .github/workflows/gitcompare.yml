@@ -1,0 +1,57 @@
+name: GitCompare
+
+on:
+  workflow_dispatch:
+    inputs:
+      good_build:
+        description: '“Good” build string (e.g. the full output of `java -version` + OpenJ9/OMR/JCL lines)'
+        required: true
+        type: string
+      bad_build:
+        description: '“Bad” build string (same format as good_build)'
+        required: true
+        type: string
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    env:
+      GOOD_BUILD: ${{ github.event.inputs.good_build }}
+      BAD_BUILD: ${{ github.event.inputs.bad_build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Build CommitHunter
+        run: |
+          mvn clean package
+
+      - name: Run CommitHunterCLI
+        id: run_commit_hunter
+        run: |
+          java -jar target/commit-hunter-1.0-SNAPSHOT-jar-with-dependencies.jar "$GOOD_BUILD" "$BAD_BUILD" > output.txt
+          cat output.txt
+
+      - name: Parse URLs from output
+        id: parse_urls
+        run: |
+          url_openj9=$(grep "OpenJ9:" output.txt | awk '{print $2}')
+          url_omr=$(grep "OMR:" output.txt | awk '{print $2}')
+          url_jcl=$(grep "JCL:" output.txt | awk '{print $2}')
+
+          echo "::set-output name=url_openj9::$url_openj9"
+          echo "::set-output name=url_omr::$url_omr"
+          echo "::set-output name=url_jcl::$url_jcl"
+
+      - name: Print final compare URLs
+        run: |
+          echo "=== FINAL OUTPUT ==="
+          echo "${{ steps.parse_urls.outputs.url_openj9 }}"
+          echo "${{ steps.parse_urls.outputs.url_omr }}"
+          echo "${{ steps.parse_urls.outputs.url_jcl }}"
