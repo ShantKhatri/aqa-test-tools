@@ -30,6 +30,7 @@ jobs:
 
       - name: Build CommitHunter
         run: |
+          cd CommitHunter
           mvn clean package
 
       - name: Run CommitHunterCLI
