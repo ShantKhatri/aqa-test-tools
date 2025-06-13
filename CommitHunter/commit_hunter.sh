@@ -4,8 +4,11 @@ parse_java_version() {
     local version_output="$1"
     local result=""
     
-    if [[ $version_output =~ openjdk\ version\ \"([0-9]+)\.([0-9]+)\.([0-9]+)-beta\" ]]; then
-        result+="openjdk_version=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}\n"
+    # Debug output
+    echo "Parsing version output: $version_output" >&2
+    
+    if [[ $version_output =~ openjdk\ version\ ([0-9]+\.[0-9]+\.[0-9]+-beta) ]]; then
+        result+="openjdk_version=${BASH_REMATCH[1]}\n"
     fi
     
     if [[ $version_output =~ OpenJ9[[:space:]]*-[[:space:]]*([0-9a-f]+) ]]; then
@@ -55,8 +58,16 @@ fi
 GOOD_BUILD="$1"
 BAD_BUILD="$2"
 
+# Debug output
+echo "Good build: $GOOD_BUILD" >&2
+echo "Bad build: $BAD_BUILD" >&2
+
 GOOD_INFO=$(parse_java_version "$GOOD_BUILD")
 BAD_INFO=$(parse_java_version "$BAD_BUILD")
+
+# Debug output
+echo "Good info: $GOOD_INFO" >&2
+echo "Bad info: $BAD_INFO" >&2
 
 required_fields=("openjdk_version" "openj9_commit" "omr_commit" "jcl_commit")
 for field in "${required_fields[@]}"; do

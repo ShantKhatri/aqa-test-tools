@@ -21,17 +21,21 @@ jobs:
         id: parse_comment
         run: |
           COMMENT="${{ github.event.comment.body }}"
-          # Remove the /gitcompare command
+          # Remove the /gitcompare command and clean up
           COMMENT=${COMMENT#/gitcompare}
-          # Split into good and bad builds
-          IFS='---' read -r GOOD_BUILD BAD_BUILD <<< "$COMMENT"
-          # Clean up whitespace
-          GOOD_BUILD=$(echo "$GOOD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          BAD_BUILD=$(echo "$BAD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          COMMENT=$(echo "$COMMENT" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           
-          # Set environment variables
-          echo "GOOD_BUILD=$GOOD_BUILD" >> $GITHUB_ENV
-          echo "BAD_BUILD=$BAD_BUILD" >> $GITHUB_ENV
+          # Split into good and bad builds using --- as separator
+          GOOD_BUILD=$(echo "$COMMENT" | sed -n '/^---/q;p')
+          BAD_BUILD=$(echo "$COMMENT" | sed -n '/^---/,$p' | sed '1d')
+          
+          # Clean up whitespace and escape quotes
+          GOOD_BUILD=$(echo "$GOOD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/"/\\"/g')
+          BAD_BUILD=$(echo "$BAD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/"/\\"/g')
+          
+          # Set environment variables with escaped quotes
+          echo "GOOD_BUILD=\"$GOOD_BUILD\"" >> $GITHUB_ENV
+          echo "BAD_BUILD=\"$BAD_BUILD\"" >> $GITHUB_ENV
 
       - name: Run CommitHunter
         id: run_commit_hunter
