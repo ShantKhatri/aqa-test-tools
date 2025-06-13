@@ -29,16 +29,15 @@ jobs:
           GOOD_BUILD=$(echo "$GOOD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           BAD_BUILD=$(echo "$BAD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           
-          echo "GOOD_BUILD<<EOF" >> $GITHUB_ENV
-          echo "$GOOD_BUILD" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          
-          echo "BAD_BUILD<<EOF" >> $GITHUB_ENV
-          echo "$BAD_BUILD" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Set environment variables
+          echo "GOOD_BUILD=$GOOD_BUILD" >> $GITHUB_ENV
+          echo "BAD_BUILD=$BAD_BUILD" >> $GITHUB_ENV
 
       - name: Run CommitHunter
         id: run_commit_hunter
+        env:
+          GOOD_BUILD: ${{ env.GOOD_BUILD }}
+          BAD_BUILD: ${{ env.BAD_BUILD }}
         run: |
           cd CommitHunter
           bash commit_hunter.sh "$GOOD_BUILD" "$BAD_BUILD" > output.txt
