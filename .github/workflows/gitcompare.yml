@@ -1,0 +1,84 @@
+name: GitCompare
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  compare:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/gitcompare')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Parse comment content
+        id: parse_comment
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          # Remove the /gitcompare command
+          COMMENT=${COMMENT#/gitcompare}
+          # Split into good and bad builds
+          IFS='---' read -r GOOD_BUILD BAD_BUILD <<< "$COMMENT"
+          # Clean up whitespace
+          GOOD_BUILD=$(echo "$GOOD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          BAD_BUILD=$(echo "$BAD_BUILD" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          
+          echo "GOOD_BUILD<<EOF" >> $GITHUB_ENV
+          echo "$GOOD_BUILD" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "BAD_BUILD<<EOF" >> $GITHUB_ENV
+          echo "$BAD_BUILD" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Run CommitHunter
+        id: run_commit_hunter
+        run: |
+          cd CommitHunter
+          bash commit_hunter.sh "$GOOD_BUILD" "$BAD_BUILD" > output.txt
+          cat output.txt
+
+      - name: Parse URLs from output
+        id: parse_urls
+        run: |
+          url_openj9=$(grep "OpenJ9:" output.txt | awk '{print $2}')
+          url_omr=$(grep "OMR:" output.txt | awk '{print $2}')
+          url_jcl=$(grep "JCL:" output.txt | awk '{print $2}')
+
+          echo "::set-output name=url_openj9::$url_openj9"
+          echo "::set-output name=url_omr::$url_omr"
+          echo "::set-output name=url_jcl::$url_jcl"
+
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const urls = {
+              openj9: '${{ steps.parse_urls.outputs.url_openj9 }}',
+              omr: '${{ steps.parse_urls.outputs.url_omr }}',
+              jcl: '${{ steps.parse_urls.outputs.url_jcl }}'
+            };
+            
+            const comment = `## GitCompare Results
+            
+            ### OpenJ9 Changes
+            ${urls.openj9}
+            
+            ### OMR Changes
+            ${urls.omr}
+            
+            ### JCL Changes
+            ${urls.jcl}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
