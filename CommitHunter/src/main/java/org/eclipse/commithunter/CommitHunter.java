@@ -9,17 +9,29 @@ public class CommitHunter {
     private static final Pattern OPENJ9_PATTERN = Pattern.compile("OpenJ9\\s*-\\s*([0-9a-f]+)");
     private static final Pattern OMR_PATTERN = Pattern.compile("OMR\\s*-\\s*([0-9a-f]+)");
     private static final Pattern JCL_PATTERN = Pattern.compile("JCL\\s*-\\s*([0-9a-f]+)");
-    private static final Pattern JDK_VERSION_PATTERN = Pattern.compile("openjdk version \"(\\d+)\\.(\\d+)\\.(\\d+)");
+    private static final Pattern JDK_VERSION_PATTERN = Pattern.compile("openjdk version '(\\d+)\\.(\\d+)\\.(\\d+)-beta' \\d{4}-\\d{2}-\\d{2}");
 
     public static Map<String, String> processBuilds(String goodBuild, String badBuild) {
         Matcher goodOpenj9Matcher = OPENJ9_PATTERN.matcher(goodBuild);
-        Matcher goodOmrMatcher = OMR_PATTERN.matcher(goodBuild);
-        Matcher goodJclMatcher = JCL_PATTERN.matcher(goodBuild);
-        Matcher goodJdkVersionMatcher = JDK_VERSION_PATTERN.matcher(goodBuild);
-
-        if (!goodOpenj9Matcher.find() || !goodOmrMatcher.find() || !goodJclMatcher.find() || !goodJdkVersionMatcher.find()) {
-            throw new IllegalArgumentException("Could not parse good build string");
+        if (!goodOpenj9Matcher.find()) {
+            throw new IllegalArgumentException("Could not parse good build string for OpenJ9");
         }
+        Matcher goodOmrMatcher = OMR_PATTERN.matcher(goodBuild);
+        if (!goodOmrMatcher.find()) {
+            throw new IllegalArgumentException("Could not parse good build string for OMR");
+        }
+        Matcher goodJclMatcher = JCL_PATTERN.matcher(goodBuild);
+        if (!goodJclMatcher.find()) {
+            throw new IllegalArgumentException("Could not parse good build string for JCL");
+        }
+        Matcher goodJdkVersionMatcher = JDK_VERSION_PATTERN.matcher(goodBuild);
+        if (!goodJdkVersionMatcher.find()) {
+            throw new IllegalArgumentException("Could not parse good build string for JDK version");
+        }
+
+//        if (!goodOpenj9Matcher.find() || !goodOmrMatcher.find() || !goodJclMatcher.find() || !goodJdkVersionMatcher.find()) {
+//            throw new IllegalArgumentException("Could not parse good build string");
+//        }
 
         Matcher badOpenj9Matcher = OPENJ9_PATTERN.matcher(badBuild);
         Matcher badOmrMatcher = OMR_PATTERN.matcher(badBuild);
