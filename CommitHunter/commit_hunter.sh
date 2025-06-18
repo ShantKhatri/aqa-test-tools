@@ -7,7 +7,7 @@ parse_java_version() {
     # Debug output
     echo "Parsing version output: $version_output" >&2
     
-    if [[ $version_output =~ openjdk\ version\ ([0-9]+\.[0-9]+\.[0-9]+-beta) ]]; then
+    if [[ $version_output =~ openjdk\ version\ \"([0-9]+)\.[0-9]+\.[0-9]+-beta ]]; then
         result+="openjdk_version=${BASH_REMATCH[1]}\n"
     fi
     
